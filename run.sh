@@ -28,11 +28,14 @@ if command -v nix >/dev/null 2>&1; then
   exec nix develop --command bash -c '
     # Plan C: System-webkit, keine Nix-Lib-Pollution zur Laufzeit.
     unset LD_LIBRARY_PATH
-    # Wayland-EGL ist auf diesem Setup kaputt -> ueber XWayland (X11) laufen.
-    # Jetzt FAIRER Test: die Binary ist frisch gegen System (gdkx11) gebaut.
-    export GDK_BACKEND=x11
-    export WEBKIT_DISABLE_DMABUF_RENDERER=1
+    # BRECHSTANGE: EGL ist auf diesem Wayland/AMD-Setup unrettbar. Deshalb GTK
+    # UND webkit die GL-Beschleunigung KOMPLETT verbieten -> reines Software-
+    # Rendering, kein EGL-Kontext wird ueberhaupt versucht. Fuer eine Chat-UI
+    # unkritisch. (x11 raus: hat auf der sauberen Binary nichts gebracht.)
+    export GDK_GL=disable
     export WEBKIT_DISABLE_COMPOSITING_MODE=1
+    export WEBKIT_DISABLE_DMABUF_RENDERER=1
+    export LIBGL_ALWAYS_SOFTWARE=1
     export RUST_BACKTRACE=1
     cd src-tauri && cargo tauri dev'
 else
