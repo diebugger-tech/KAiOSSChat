@@ -65,6 +65,44 @@ fn main() {
                         req.allow();
                         true // Request behandelt — kein Default-DENY
                     });
+
+                    // Externe Links (z.B. 📚 -> ollama.com/library, TODO #58a:
+                    // "im Browser oeffnen, dort pullen, KAiOSS erkennt neue
+                    // Modelle automatisch") im Standard-Browser oeffnen —
+                    // die Webview schluckte target=_blank sonst still.
+                    // Lokaler Stack (localhost/127.0.0.1) navigiert normal.
+                    use glib::prelude::Cast;
+                    use webkit2gtk::{
+                        NavigationPolicyDecision, NavigationPolicyDecisionExt,
+                        PolicyDecisionExt, PolicyDecisionType, URIRequestExt,
+                    };
+                    wv.connect_decide_policy(|_, decision, decision_type| {
+                        if decision_type != PolicyDecisionType::NavigationAction
+                            && decision_type != PolicyDecisionType::NewWindowAction
+                        {
+                            return false;
+                        }
+                        if let Some(nav) = decision.dynamic_cast_ref::<NavigationPolicyDecision>() {
+                            if let Some(mut action) = nav.navigation_action() {
+                                if let Some(req) = action.request() {
+                                    if let Some(uri) = req.uri() {
+                                        let external = (uri.starts_with("http://")
+                                            || uri.starts_with("https://"))
+                                            && !uri.starts_with("http://localhost")
+                                            && !uri.starts_with("http://127.0.0.1");
+                                        if external {
+                                            let _ = std::process::Command::new("xdg-open")
+                                                .arg(uri.as_str())
+                                                .spawn();
+                                            decision.ignore();
+                                            return true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        false
+                    });
                 });
             }
 
