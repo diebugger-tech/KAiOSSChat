@@ -35,6 +35,20 @@ Nach `install-desktop.sh` startet das KAi-Icon die App ohne Terminal;
 - Icons: `src-tauri/icons/` — Quelle `icon.svg` (KAi-Avatar aus
   AlienAvatar.svelte), gerendert mit cairosvg
 
+## Das KAi-Ökosystem
+
+KAiOSSChat ist ein Baustein von dreien — die Apps gehören zusammen und
+teilen sich Gehirn (SurrealDB) und Ohr/Mund (kai-voice):
+
+| Projekt | Rolle | Repo |
+|---|---|---|
+| **[KAiOSS](https://github.com/diebugger-tech/KAiOSS)** | AI-native Project-Hub (Web): Kanban, Wiki, Multi-Model-KAi, Gedächtnis-Verwaltung. Liefert das Svelte-Frontend, das diese Shell lädt. | `diebugger-tech/KAiOSS` |
+| **KAiOSSChat** (dieses Repo) | KAi als Desktop-App: Tauri-Shell um den KAiOSS-Chat, Tray, später Tool-Executor mit Permission-Gate (Phase 3). | `diebugger-tech/KAiOSSChat` |
+| **[kai-voice](https://github.com/diebugger-tech/kai-voice)** | Zustandsloses lokales Voice-Backend (STT via faster-whisper, TTS via Piper) über WebSocket `:8770` — Ohr/Mund, nie Hirn (ADR-002). | `diebugger-tech/kai-voice` |
+
+Gemeinsame Dienste: **SurrealDB** `:8000` (ein Gehirn für alle),
+**Ollama** `:11434` (lokale Modelle), **kai-voice** `:8770`.
+
 ## Bekannte Stolpersteine
 
 - **Nix-Dev-Shell (flake.nix) ist DEPRECATED** — Nix-rustc + System-GTK =
