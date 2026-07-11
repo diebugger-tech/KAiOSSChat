@@ -98,6 +98,13 @@ gelernt, gilt überall.
   (KAiOSS-Tab + Desktop-App)? Backend ist zustandslos — vermutlich ja,
   sonst Queue/zweite Instanz mit anderem Port.
 - v1 darf Text-only starten; Voice ist Phase 5.
+- **Sichere Sprachsteuerung (Grundsatz):** Voice ist Ein-/Ausgabekanal —
+  das Permission-Gate bleibt ein **Klick im nativen Dialog**. Ein gesprochenes
+  „Ja" zählt NICHT als Freigabe für schreibende Aktionen (STT kann sich
+  verhören; ein Nuscheln darf keinen Termin verschieben). Erst spätere Stufe,
+  und nur nach Gegencheck: Sprach-Bestätigung höchstens für LESENDE Aktionen
+  (calendar.list), niemals für create/update — und mit expliziter
+  Bestätigungs-Phrase, nicht freiem „Ja".
 
 ## 5. Permission-Gate (das Kernstück)
 
@@ -189,3 +196,6 @@ KAiOSSChat/
    (nur Mic, Tray, Dialog, Prozess-Spawn für Pi); was übersehen wir?
 6. **kai_permission-Schema** — reicht (app, verb, erlaubt_seit, provenance,
    widerrufen)? Ablauf/TTL für erteilte Dauerfreigaben?
+7. **Sprach-Bestätigung** — trägt die Regel „Voice bestätigt nie schreibende
+   Aktionen" (§4)? Oder gibt es ein sicheres Muster (Bestätigungs-Phrase +
+   Confidence-Schwelle der STT), das wir unterschätzen?
