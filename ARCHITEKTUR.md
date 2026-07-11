@@ -181,16 +181,37 @@ KAiOSSChat ist der erste KAi-Baustein mit **echtem Cloud-Egress**
 - Secrets: OAuth-Refresh-Tokens lokal (agenix bzw. chmod 600), NIE in der DB
   (KAiOSS-Invariante „Keys nie in DB/Backup/Export").
 
-## 7. Skill 1: Google Calendar
+## 7. Skill 1: Lokale PC-Steuerung (PIVOT, Gemini-Review 11.07.)
 
-- Drei Tools: `calendar.list`, `calendar.create`, `calendar.update`
-  (delete bewusst NICHT in v1).
-- Auth: OAuth2 Desktop-Flow — Google-Cloud-Projekt, Calendar API aktivieren,
-  OAuth-Client „Desktop", einmaliger Browser-Consent, Refresh-Token lokal.
-  (~30 min Einmal-Setup, dokumentieren in docs/SETUP-GOOGLE.md.)
-- Idealer Erstfall: klare Verben, harmloser Blast-Radius
-  (Kalender kaputt ≠ System kaputt), perfekte Permission-Gate-Demo.
-- Alternative CalDAV (Nextcloud etc.) notiert, aber v1 = native Google-API.
+**Statt Cloud-API zuerst den eigenen Rechner** — null Egress, kein
+OAuth-Setup, CSP bleibt strikt localhost. Human-in-the-Loop an echten,
+lokalen Aktionen.
+
+- Tools v1 (Blast-Radius-gestaffelt):
+  1. `app.open(name)` — Programm starten (harmlos, idealer Erstfall)
+  2. `fs.read(pfad)` — Datei lesen (read-only, Pfad-Whitelist ~/Projekte)
+  3. `shell.run(alias)` — **NUR Alias-Whitelist, NIEMALS Freitext!**
+- **Leitplanken (nicht verhandelbar):**
+  - Kein freies `shell.execute("...")` — die Charta verbietet KAi freie
+    Shell-Befehle, und KAiOSS hat die Lösung schon gebaut: die
+    `commands.json`-Whitelist + Risiko-Stufen + `task_queue`/cmd-runner
+    mit HITL + Audit-Log werden WIEDERVERWENDET (Desktop enqueued in
+    dieselbe Schiene bzw. Rust prüft gegen dieselbe commands.json).
+  - **„Immer erlauben" nur pro exaktem Alias / exakter App — nie für
+    Aufrufe mit freien Argumenten** (sonst wird eine Dauerfreigabe zur
+    Prompt-Injection-Rampe: vergifteter Memory-Inhalt → Tool-Argument →
+    Shell). resource_scope + expires_at aus §5 gelten.
+  - `fs.write` erst nach Bewährung von `fs.read` (verdiente Autonomie
+    gilt auch für den Werkzeugkasten selbst); delete-Verben NIE automatisch.
+- Ausführung: Rust-Executor (Lösung C) — Frontend sendet tool_call per IPC,
+  nativer Dialog, Rust führt aus, Ergebnis zurück in den Loop, alles in
+  kai_log (Provenance inkl. Modell).
+
+## 7b. Skill 2 (später): Google Calendar
+
+Wie ursprünglich spezifiziert (list/create/update, OAuth2 Desktop-Flow,
+Refresh-Token lokal, ~30 min Setup) — das **deklarierte Egress-Modell (§6)
+bleibt dafür bestehen** und wird erst mit diesem Skill scharf.
 
 ## 8. Repo-Struktur (Vorschlag)
 
