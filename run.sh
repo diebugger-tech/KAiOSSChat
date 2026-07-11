@@ -29,6 +29,9 @@ if command -v nix >/dev/null 2>&1; then
     export WEBKIT_DISABLE_DMABUF_RENDERER=1
     export WEBKIT_DISABLE_COMPOSITING_MODE=1
     export LIBGL_ALWAYS_SOFTWARE=1
+    # X11 statt Wayland erzwingen (XWayland) — EGL_BAD_PARAMETER tritt fast
+    # nur auf dem Wayland-EGL-Pfad auf; via X11 rendert Nix-webkit meist sauber.
+    export GDK_BACKEND=x11
     cd src-tauri && cargo tauri dev'
 else
   echo "⚠️  'nix' nicht gefunden. Entweder Nix installieren, oder den"
