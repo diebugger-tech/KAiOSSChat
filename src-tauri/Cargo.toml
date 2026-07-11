@@ -9,6 +9,12 @@ edition = "2021"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+
+# Mikrofon-Freigabe in der Webview: WebKitGTK verweigert getUserMedia per
+# Default — wir brauchen den permission-request-Handler (siehe main.rs).
+# Version "2.0" = dieselbe, die Tauris wry intern nutzt (webkit2gtk-4.1).
+[target.'cfg(target_os = "linux")'.dependencies]
+webkit2gtk = "2.0"

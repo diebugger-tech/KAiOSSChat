@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# HINWEIS: Fallback-Weg (apt + rustup, imperativ, systemweit). Auf Nix-Home-
-# Manager-Systemen scheitert rustup an der schreibgeschuetzten .zshenv —
-# nutze stattdessen die reproduzierbare Nix-Dev-Shell: nix develop && ./run.sh
+# HAUPTWEG (Plan D): apt + rustup, alles vom System. rustup laeuft mit
+# --no-modify-path, fasst also KEINE Shell-Configs an (Nix-Home-Manager-
+# sicher). Die Nix-Dev-Shell (flake.nix) ist deprecated: Nix-rustc +
+# System-GTK/glibc = ABI-Konflikt (stack smashing / Loader-Fehler).
 # KAiOSSChat — Einmal-Setup (Phase 0): installiert alle Abhängigkeiten.
 # Idempotent: bereits Installiertes wird erkannt und übersprungen.
 set -euo pipefail
@@ -12,7 +13,7 @@ echo "=== KAiOSSChat Setup (Phase 0: Companion-Shell) ==="
 echo "--- [1/4] System-Pakete (webkit2gtk & Co.) ---"
 NEED=()
 for pkg in libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev \
-           libayatana-appindicator3-dev librsvg2-dev; do
+           libayatana-appindicator3-dev librsvg2-dev libgtk-3-dev pkg-config; do
   dpkg -s "$pkg" >/dev/null 2>&1 || NEED+=("$pkg")
 done
 if [ ${#NEED[@]} -gt 0 ]; then
@@ -25,8 +26,8 @@ fi
 # 2. Rust-Toolchain
 echo "--- [2/4] Rust ---"
 if ! command -v cargo >/dev/null 2>&1; then
-  echo "Installiere rustup (stable)…"
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  echo "Installiere rustup (stable, --no-modify-path: keine Shell-Configs)…"
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
   # shellcheck disable=SC1091
   source "$HOME/.cargo/env"
 else

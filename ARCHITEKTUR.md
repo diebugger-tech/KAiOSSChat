@@ -6,7 +6,14 @@
 > Teilt sich das Gehirn mit KAiOSS (dieselbe SurrealDB). 100 % lokal, Egress
 > nur zu explizit deklarierten Ziel-APIs, jeder Call sichtbar + bestätigt.
 >
-> Status: Architektur-Entwurf. Review durch Gemini ausstehend. KEIN Code bisher.
+> Status (11.07.2026): Phase 0 GEBAUT und läuft — Companion-Shell mit
+> Fenster-Platzierung, Mikrofon-Freigabe (WebKitGTK-Permission-Handler für
+> kai-voice), Tray-Icon mit Blinzel-Animation und Desktop-Installation
+> (install-desktop.sh). Frontend-seitig: standalone-Modus in KAiPanel
+> (Panel füllt das Fenster, kein Overlay-Rand) und Inline-Löschbestätigung
+> statt window.confirm() (in der Webview nicht implementiert).
+> Setup-Hauptweg ist Plan D (rustup + apt, siehe README.md) — die
+> Nix-Dev-Shell ist deprecated. Nächster Schritt: Phase 1 (Standalone).
 
 ## 1. Identität & Abgrenzung
 

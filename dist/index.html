@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KAi — Standalone</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #1a1d27;
+    --border: #2a2e3d;
+    --text: #e8eaf0;
+    --muted: #8b90a0;
+    --accent: #6c8cff;
+    --user-bubble: #2b3a67;
+    --kai-bubble: #1f2330;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    user-select: none;
+  }
+  .logo {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #9b6cff);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px; color: #fff;
+  }
+  header h1 { font-size: 15px; font-weight: 600; flex: 1; }
+  .status {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--muted);
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #e0a030; }
+  .dot.online { background: #3ecf6a; }
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .msg {
+    max-width: 82%;
+    padding: 9px 13px;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  .msg.user {
+    align-self: flex-end;
+    background: var(--user-bubble);
+    border-bottom-right-radius: 4px;
+  }
+  .msg.kai {
+    align-self: flex-start;
+    background: var(--kai-bubble);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+  .msg.kai .who { color: var(--accent); font-size: 11px; font-weight: 600; margin-bottom: 3px; }
+  footer {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+  }
+  #input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    padding: 10px 12px;
+    resize: none;
+    outline: none;
+    max-height: 120px;
+  }
+  #input:focus { border-color: var(--accent); }
+  #send {
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 0 16px;
+    cursor: pointer;
+  }
+  #send:hover { filter: brightness(1.15); }
+  #send:disabled { opacity: 0.4; cursor: default; }
+</style>
+</head>
+<body>
+  <header>
+    <div class="logo">K</div>
+    <h1>KAi</h1>
+    <div class="status"><span class="dot" id="dot"></span><span id="statusText">Standalone</span></div>
+  </header>
+
+  <div id="messages"></div>
+
+  <footer>
+    <textarea id="input" rows="1" placeholder="Nachricht an KAi…" autofocus></textarea>
+    <button id="send">➤</button>
+  </footer>
+
+<script>
+// ============================================================
+// KAiOSSChat — Standalone-Modus (Phase 0, VM-Test)
+// Zweck: Fenster-Rendering + Chat-UI OHNE KAiOSS-Stack testen.
+// Falls ein KAiOSS-Stack (Port 5174) ODER Ollama (Port 11434)
+// erreichbar ist, wird das erkannt und angezeigt.
+// ============================================================
+const messagesEl = document.getElementById('messages');
+const inputEl = document.getElementById('input');
+const sendEl = document.getElementById('send');
+const dotEl = document.getElementById('dot');
+const statusTextEl = document.getElementById('statusText');
+
+let ollamaOnline = false;
+let ollamaModel = null;
+
+function addMsg(text, who) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + who;
+  if (who === 'kai') {
+    const label = document.createElement('div');
+    label.className = 'who';
+    label.textContent = 'KAi';
+    div.appendChild(label);
+  }
+  const body = document.createElement('div');
+  body.textContent = text;
+  div.appendChild(body);
+  messagesEl.appendChild(div);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+  return body;
+}
+
+// --- Backend-Erkennung (optional, schlägt still fehl) ---
+async function detectBackends() {
+  try {
+    const r = await fetch('http://127.0.0.1:11434/api/tags', { signal: AbortSignal.timeout(1500) });
+    const data = await r.json();
+    if (data.models && data.models.length) {
+      ollamaOnline = true;
+      ollamaModel = data.models[0].name;
+      dotEl.classList.add('online');
+      statusTextEl.textContent = 'Ollama: ' + ollamaModel;
+      return;
+    }
+  } catch (_) { /* kein Ollama — ok */ }
+  statusTextEl.textContent = 'Standalone (kein Backend)';
+}
+
+// --- Antwort erzeugen: Ollama wenn da, sonst Echo-Demo ---
+async function reply(userText) {
+  if (ollamaOnline) {
+    const body = addMsg('…', 'kai');
+    try {
+      const r = await fetch('http://127.0.0.1:11434/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: ollamaModel, prompt: userText, stream: false })
+      });
+      const data = await r.json();
+      body.textContent = data.response || '(leere Antwort)';
+    } catch (e) {
+      body.textContent = 'Ollama-Fehler: ' + e.message;
+    }
+  } else {
+    addMsg('Standalone-Modus — kein Backend verbunden.\nDu sagtest: „' + userText + '“\n\n(Rendering, Eingabe und Scrolling funktionieren ✅)', 'kai');
+  }
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function send() {
+  const text = inputEl.value.trim();
+  if (!text) return;
+  inputEl.value = '';
+  inputEl.style.height = 'auto';
+  addMsg(text, 'user');
+  reply(text);
+}
+
+sendEl.addEventListener('click', send);
+inputEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+});
+inputEl.addEventListener('input', () => {
+  inputEl.style.height = 'auto';
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+});
+
+addMsg('Hallo! Ich bin das KAiOSSChat-Standalone-Fenster.\nDieser Modus testet die Tauri-Shell ohne den KAiOSS-Stack.', 'kai');
+detectBackends();
+</script>
+</body>
+</html>

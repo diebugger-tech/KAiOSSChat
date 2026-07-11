@@ -1,0 +1,23 @@
+{
+  "build": {
+    "devUrl": null,
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "KAi (Standalone)",
+        "url": "index.html",
+        "width": 420,
+        "height": 640,
+        "minWidth": 360,
+        "minHeight": 480,
+        "alwaysOnTop": true,
+        "decorations": true,
+        "resizable": true,
+        "skipTaskbar": false
+      }
+    ]
+  }
+}

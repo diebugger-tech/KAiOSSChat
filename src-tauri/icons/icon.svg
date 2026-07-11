@@ -1,0 +1,31 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="faceGrad" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#16222f"/>
+      <stop offset="70%" stop-color="#0e1724"/>
+      <stop offset="100%" stop-color="#080e16"/>
+    </radialGradient>
+  </defs>
+  <!-- Nur der KAi-Avatar, randfuellend, transparenter Hintergrund
+       (Geometrie 1:1 aus AlienAvatar.svelte, Skalierung 6.66 = ~96% Canvas) -->
+  <g transform="translate(256,256) scale(6.95) translate(-50,-40.75)">
+    <!-- weicher Glow hinter dem Kopf -->
+    <ellipse cx="50" cy="49" rx="33" ry="31" fill="#1D9E75" opacity="0.18"/>
+    <!-- Antenne -->
+    <path d="M 50,30 L 50,14" stroke="#1D9E75" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="50" cy="10" r="7" fill="#00ffaa" opacity="0.3"/>
+    <circle cx="50" cy="10" r="4.5" fill="#00ffaa"/>
+    <!-- Kopf -->
+    <path d="M 24,42 C 18,60 32,76 50,76 C 68,76 82,60 76,42 C 70,22 30,22 24,42 Z"
+          fill="url(#faceGrad)" stroke="#1D9E75" stroke-width="2.5"/>
+    <!-- Augen mit Glow-Halo -->
+    <ellipse cx="38" cy="48" rx="9" ry="11.5" fill="#00ffaa" opacity="0.25"/>
+    <ellipse cx="62" cy="48" rx="9" ry="11.5" fill="#00ffaa" opacity="0.25"/>
+    <ellipse cx="38" cy="48" rx="6.5" ry="9" fill="#00ffaa"/>
+    <ellipse cx="62" cy="48" rx="6.5" ry="9" fill="#00ffaa"/>
+    <circle cx="36" cy="45" r="2" fill="#ffffff"/>
+    <circle cx="60" cy="45" r="2" fill="#ffffff"/>
+    <!-- Laecheln -->
+    <path d="M 44,60 Q 50,64 56,60" stroke="#00ffaa" stroke-width="2" stroke-linecap="round" fill="none"/>
+  </g>
+</svg>
