@@ -31,21 +31,40 @@
   Buttons/Header kompakter (Feedback: ESC_CLOSE u.a. zu groß — von Anfang
   an Icon-Buttons statt Text-Boxen).
 
-### 2.2 Agent-Core — Pi im RPC-Modus
-- Shell spawnt Pi als Kindprozess, JSON über stdin/stdout (OpenClaw-Muster).
-- Pi liefert gratis: Agent-Loop, Tool-Calling, Ollama-Anbindung,
-  Kontext-Kompaktierung, natives SKILL.md-Laden.
-- Drei eigene Extensions (TypeScript):
-  1. **PermissionGate** — jeder Tool-Call → Event an Tauri → wartet auf OK
-  2. **WorkflowRecorder** — bestätigte Schritte mitschreiben → SKILL.md
-  3. **Tool-Definitionen** — dünne Beschreibungen der Ziel-APIs
-     (Endpoint, Auth, Parameter-Schema); Retry/Fehlerbehandlung im Tool,
-     nicht im Modell
-- OFFENE ENTSCHEIDUNG (Gemini): Pi/TypeScript akzeptieren vs. Python-Eigenbau
-  (litellm + eigener Loop). Pi = weniger Arbeit, TS; Eigenbau = mehr Arbeit,
-  Wunschsprache.
+### 2.2 Chat-Core — ÜBERNAHME aus KAiOSS (der Kern des Ganzen)
+**Der Chat wird nicht neu gebaut — er existiert fertig in KAiOSS** und wird
+auf Systemebene gehoben. Der komplette KAiPanel-Stack ist Svelte 5 und
+spricht ausschließlich localhost-Dienste an — er läuft in der Tauri-Webview
+unverändert:
+- `KAiPanel` (Chat, Verlauf, Next-Actions, Stop, Streaming mit Rest-Buffer)
+- `ollamaService` (chatStream, listInstalledModels, pullModel mit Abort)
+- `memoryRepository` (Capture mit Secret-Filter + Phase-3-Retrieval mit
+  allen Guards) → **das gemeinsame Gehirn ist damit ab Tag 1 angebunden**
+- `voiceClient` (PTT, Gain, Mikrofon-Release, satzweises TTS via kai-voice)
+- `ModelDropdown`/`modelAvailability` (Badges, HITL-Pull, 📚-Link)
+- `db.svelte.js` (SurrealDB-Singleton mit Reconnect)
 
-### 2.3 Modell — Ollama (bestehende Instanz)
+**Code-Sharing-Entscheidung (offene Frage 8, Gemini):**
+(a) Kopieren — schnell, aber Drift zwischen Web- und Desktop-Chat
+    vorprogrammiert (vgl. KAiOSS #57: schon ZWEI Render-Pfade nerven);
+(b) gemeinsames Package `kaioss-ui-core` (npm workspace oder git submodule) —
+    Empfehlung hier: EIN Chat-Code für Web und Desktop;
+(c) KAiOSSChat als Teil des KAiOSS-Monorepos (src-tauri/ daneben).
+
+### 2.3 Agent-Schicht — Tool-Calling (SPÄTER, Phase 3+)
+Für den Chat selbst ist KEIN Agent-Framework nötig (ollamaService reicht).
+Die Agent-Schicht kommt erst mit den App-Tools dazu:
+- **PermissionGate** — jeder Tool-Call → natives Tauri-Dialog → wartet auf OK
+- **WorkflowRecorder** — bestätigte Schritte → SKILL.md
+- **Tool-Definitionen** — dünne API-Beschreibungen (Endpoint, Auth, Schema);
+  Retry/Fehlerbehandlung im Tool, nicht im Modell
+- OFFENE ENTSCHEIDUNG (Gemini): Pi im RPC-Modus als Kindprozess (liefert
+  Loop/Tool-Calling/SKILL.md-Laden gratis, TS) vs. eigene schlanke
+  Tool-Schicht im bestehenden ollamaService-Muster (volle Kontrolle,
+  kein neuer Prozess) vs. Python-Eigenbau. Da der Chat schon steht,
+  ist der Eigenbau-Nachteil kleiner als im ursprünglichen Plan.
+
+### 2.4 Modell — Ollama (bestehende Instanz)
 - Arbeitsmodell: `qwen3:8b` (Q4) — solides Tool-Calling, passt komplett in
   8 GB VRAM. 14B nur teiloffloaded → nicht für v1.
 - Modell-Auswahl-UI: Muster aus KAiOSS wiederverwenden
@@ -53,7 +72,7 @@
 - OFFENE FRAGE (Gemini): qwen3:8b vs. qwen2.5-coder:7b für Tool-Calling —
   im Labor (KAiOSS #45) messen statt raten, sobald Daten da sind.
 
-### 2.4 Lernen — SKILL.md pro App/Workflow
+### 2.5 Lernen — SKILL.md pro App/Workflow
 - Erste Ausführung: Modell exploriert, JEDER Schritt bestätigt.
   Recorder destilliert daraus eine SKILL.md nach `~/skills/kai/<app>/`
   (git-versionierbar, menschenlesbar, Pi lädt sie nativ; kompatibel zum
@@ -168,19 +187,26 @@ KAiOSSChat/
 6. SurrealDB (vorhanden, KAiOSS-Instanz) — Migration kaichat-User
 7. Google-Cloud-Projekt + OAuth-Client (einmalig, Phase 3)
 
-## 10. Phasen
+## 10. Phasen (umgestellt: Chat-Übernahme zuerst — er existiert ja schon)
 
-- **Phase 0 — Spike (kritischste Annahme zuerst):** Pi headless im RPC-Modus,
-  ein Tool-Call mit qwen3:8b durch. Beweist Pi+Ollama+Tool-Calling, BEVOR
-  UI-Arbeit anfällt. Abbruchkriterium definiert: klappt Tool-Calling mit
-  8B lokal nicht zuverlässig → Python-Eigenbau-Entscheidung neu bewerten.
-- **Phase 1 — Shell:** Tauri-Bubble + Chat gegen Pi-RPC (Text-only).
-- **Phase 2 — Gehirn:** memory_capture schreiben + memory_node-Retrieval
-  (Muster aus KAiOSS 1:1), kaichat-DB-User, kai_status-Sichtbarkeit.
-- **Phase 3 — Permission-Gate + Calendar:** die drei Tools, OAuth-Setup,
+- **Phase 0 — Spike:** Tauri-2-Minimalfenster, das den bestehenden
+  KAiOSS-Chat-Stack lädt und gegen die laufenden localhost-Dienste
+  (SurrealDB, Ollama) spricht. Beweist die Kern-These „Chat läuft in der
+  Webview unverändert" in einem Tag. (Der Tool-Calling-Spike mit qwen3:8b
+  wandert in Phase 3.)
+- **Phase 1 — Shell komplett:** rundes Always-on-top-Bubble ↔ Chat-Expand,
+  Tray, Autostart. Chat inkl. Memory (Capture + Retrieval = Gehirn ab Tag 1,
+  weil im übernommenen Stack enthalten) und Voice (kai-voice-Client ist
+  Teil des Stacks — Parallel-Client-Frage vorziehen!).
+  Dazu: `kaichat`-DB-User (Least Privilege) + kai_status:chat.
+- **Phase 2 — Code-Sharing sauber:** Entscheidung aus Frage 8 umsetzen
+  (Package/Submodule/Monorepo), bevor Drift entsteht.
+- **Phase 3 — Agent-Schicht + Calendar:** Tool-Calling-Spike (qwen3:8b vs.
+  qwen2.5-coder), PermissionGate, die drei Calendar-Tools, OAuth-Setup,
   kai_permission, Audit-Log.
 - **Phase 4 — Recorder:** bestätigte Läufe → SKILL.md → Replay (L0→L1).
-- **Phase 5 — Voice:** kai-voice als zweiter Client (PTT, TTS-Toggle).
+- **Phase 5 — Politur:** Sprachsteuerungs-Feinheiten, Energie-/Statusanzeigen
+  (Muster aus KAiOSS #59).
 
 ## 11. Offene Fragen für den Gegencheck (Gemini)
 
