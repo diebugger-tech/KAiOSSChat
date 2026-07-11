@@ -54,25 +54,43 @@ unverändert:
 - `ModelDropdown`/`modelAvailability` (Badges, HITL-Pull, 📚-Link)
 - `db.svelte.js` (SurrealDB-Singleton mit Reconnect)
 
-**Code-Sharing-Entscheidung (offene Frage 8, Gemini):**
-(a) Kopieren — schnell, aber Drift zwischen Web- und Desktop-Chat
-    vorprogrammiert (vgl. KAiOSS #57: schon ZWEI Render-Pfade nerven);
-(b) gemeinsames Package `kaioss-ui-core` (npm workspace oder git submodule) —
-    Empfehlung hier: EIN Chat-Code für Web und Desktop;
-(c) KAiOSSChat als Teil des KAiOSS-Monorepos (src-tauri/ daneben).
+**Code-Sharing — ENTSCHIEDEN: Companion-Shell (Variante c, radikal einfach):**
+KAiOSSChat ist eine dünne Tauri-Shell, die die Route
+`http://localhost:5174/desktop-bubble` des LAUFENDEN KAiOSS-Stacks lädt.
+- EIN Frontend-Code (in KAiOSS), null Duplikation, null Refactoring.
+- WICHTIGE KORREKTUR zu Geminis SSG-Vorschlag: SvelteKit auf Static Site
+  umzustellen würde die Server-Routen brechen (`/api/open` = ⚓-Anker-Sprung,
+  `/api/runner` = Runner-Bootstrap). Die Companion-Shell braucht kein SSG —
+  der SvelteKit-Server läuft ja (start.sh).
+- Trade-off (bewusst): Desktop-App setzt laufenden Stack voraus — bei
+  diesem Setup ohnehin der Fall; die Shell kann den Stack-Start künftig
+  selbst anstoßen (run.sh prüft + startet).
+- Später, falls Standalone nötig: dann Workspace-Extraktion `ui-core`
+  (Geminis Struktur) — aber erst bei echtem Bedarf (Inv 8).
 
-### 2.3 Agent-Schicht — Tool-Calling (SPÄTER, Phase 3+)
-Für den Chat selbst ist KEIN Agent-Framework nötig (ollamaService reicht).
-Die Agent-Schicht kommt erst mit den App-Tools dazu:
-- **PermissionGate** — jeder Tool-Call → natives Tauri-Dialog → wartet auf OK
-- **WorkflowRecorder** — bestätigte Schritte → SKILL.md
-- **Tool-Definitionen** — dünne API-Beschreibungen (Endpoint, Auth, Schema);
-  Retry/Fehlerbehandlung im Tool, nicht im Modell
-- OFFENE ENTSCHEIDUNG (Gemini): Pi im RPC-Modus als Kindprozess (liefert
-  Loop/Tool-Calling/SKILL.md-Laden gratis, TS) vs. eigene schlanke
-  Tool-Schicht im bestehenden ollamaService-Muster (volle Kontrolle,
-  kein neuer Prozess) vs. Python-Eigenbau. Da der Chat schon steht,
-  ist der Eigenbau-Nachteil kleiner als im ursprünglichen Plan.
+### 2.3 Agent-Schicht — Tool-Calling (Phase 3) — ENTSCHIEDEN: Lösung C
+
+**Die „Zwei-Wege-Falle" (Gemini-Review) ist real** — zwei konkurrierende
+LLM-Loops (Frontend→Ollama vs. Pi→Ollama) darf es nicht geben. Gelöst wird
+sie aber weder mit Intent-Classifier (Lösung A, überkomplex) noch mit
+Pi-als-Middleware (Lösung B, KAiPanel-Umbau + opaker Loop), sondern:
+
+**Lösung C — Ollama ist selbst der Router (native Tool-Calls):**
+- `ollamaService.chatStream` wird um `tools` + `onToolCall`-Callback
+  erweitert (EIN Loop, Web und Desktop identisch).
+- Web-Modus: keine Tools registriert → Verhalten exakt wie heute.
+- Desktop-Modus: Tool-Definitionen werden mitgesendet. Antwortet das Modell
+  mit `tool_calls`, reicht das Frontend sie via **Tauri-IPC an Rust**:
+  Permission-Dialog (nativ) → Rust führt den HTTP-Call aus (Egress NUR in
+  Rust, hinter Whitelist — schließt Geminis Node.js-Loch by design, es
+  gibt keinen Node-Kindprozess mit Netzzugang) → Ergebnis zurück in den Loop.
+- **PermissionGate** = nativer Rust-Dialog; **WorkflowRecorder** = Rust
+  loggt bestätigte Call-Sequenzen → SKILL.md; **Tool-Definitionen** =
+  deklarative JSON-Schemas im Repo (Frontend sendet sie, Rust validiert
+  Host gegen Whitelist).
+- **Pi = Plan B**, nicht mehr gesetzt: nur falls SKILL.md-Interpretation/
+  Kontext-Kompaktierung im Eigenbau zu teuer werden. (Frage 1 damit
+  vorentschieden; Spike in Phase 3 bestätigt qwen2.5-coder-Tool-Calling.)
 
 ### 2.4 Modell — Ollama (bestehende Instanz)
 - Arbeitsmodell: `qwen3:8b` (Q4) — solides Tool-Calling, passt komplett in
@@ -142,6 +160,9 @@ gelernt, gilt überall.
   [Immer erlauben für: calendar.update]"
 - „Immer erlauben" = **verdiente Autonomie pro (App × Verb)**, gespeichert
   als `kai_permission`-Record (SurrealDB, mit Provenance + Widerrufs-UI).
+  Schema (Gemini-Review eingearbeitet): `app`, `verb`, **`resource_scope`**
+  (z.B. nur Kalender X), **`expires_at`** (Dauerfreigaben laufen ab, z.B.
+  30 Tage), `erlaubt_seit`, `provenance`, `widerrufen`.
   Lesend (calendar.list) kann früher freigegeben werden als schreibend
   (calendar.update); delete-Verben NIE auto (Charta).
 - Jede Ausführung (auch abgelehnte) → `kai_log` (Audit, Modell in Provenance

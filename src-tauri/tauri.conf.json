@@ -1,0 +1,31 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "KAiOSSChat",
+  "version": "0.1.0",
+  "identifier": "tech.diebugger.kaiosschat",
+  "build": {
+    "devUrl": "http://localhost:5174",
+    "frontendDist": "http://localhost:5174"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "KAi",
+        "url": "/desktop-bubble",
+        "width": 460,
+        "height": 720,
+        "minWidth": 380,
+        "minHeight": 520,
+        "alwaysOnTop": true,
+        "decorations": true,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": false
+  }
+}
