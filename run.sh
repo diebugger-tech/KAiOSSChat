@@ -26,11 +26,13 @@ fi
 #                               für eine Chat-UI völlig unkritisch)
 if command -v nix >/dev/null 2>&1; then
   exec nix develop --command bash -c '
-    # WICHTIG (Plan C, System-webkit): KEINE Nix-Bibliothekspfade zur Laufzeit
-    # — sonst laedt das System-webkit eine Nix-libsqlite/-libwebkit und crasht
-    # (das war die wahre Ursache hinter "EGL_BAD_PARAMETER"). Sauber machen:
+    # Plan C: System-webkit, keine Nix-Lib-Pollution zur Laufzeit.
     unset LD_LIBRARY_PATH
+    # Wayland-EGL ist auf diesem Setup kaputt -> ueber XWayland (X11) laufen.
+    # Jetzt FAIRER Test: die Binary ist frisch gegen System (gdkx11) gebaut.
+    export GDK_BACKEND=x11
     export WEBKIT_DISABLE_DMABUF_RENDERER=1
+    export WEBKIT_DISABLE_COMPOSITING_MODE=1
     export RUST_BACKTRACE=1
     cd src-tauri && cargo tauri dev'
 else
