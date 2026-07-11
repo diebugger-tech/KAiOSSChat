@@ -14,6 +14,21 @@ Svelte-5-Frontend-Route `/desktop-bubble` des laufenden KAiOSS-Stacks.
 (wird von den Start-Skripten automatisch mitgestartet). Phase 1 =
 Standalone-Build ohne Webserver (siehe ARCHITEKTUR.md §2.2).
 
+## Von Null auf KAi (frisches System)
+
+KAiOSSChat braucht die beiden Geschwister-Repos — erst klonen, dann bauen:
+
+```bash
+mkdir -p ~/Projekte/aktiv && cd ~/Projekte/aktiv
+git clone https://github.com/diebugger-tech/KAiOSS.git
+git clone https://github.com/diebugger-tech/kai-voice.git   # optional: Voice
+git clone https://github.com/diebugger-tech/KAiOSSChat.git
+```
+
+KAiOSS einmal nach dessen README aufsetzen (Quickstart, ein Befehl) —
+`run.sh`/`start-app.sh` starten den Stack danach automatisch mit.
+Liegt KAiOSS woanders: `KAIOSS_DIR=/pfad/zu/KAiOSS ./run.sh`.
+
 ## Setup & Start
 
 ```bash
