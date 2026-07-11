@@ -23,12 +23,14 @@
           glib-networking           # TLS im Webview (fetch zu localhost:11434 etc.)
         ];
 
+        # Kein nodejs hier: die Tauri-Shell braucht es nicht. Der KAiOSS-Stack
+        # (Vite/Frontend) läuft über sein eigenes start.sh mit dem Node aus
+        # Home Manager. `cargo tauri dev` lädt nur die bereits laufende devUrl.
         buildTools = with pkgs; [
           rustc
           cargo
           cargo-tauri
           pkg-config
-          nodejs_20        # nur für den KAiOSS-Frontend-Build, nicht die Shell selbst
         ];
       in {
         devShells.default = pkgs.mkShell {
