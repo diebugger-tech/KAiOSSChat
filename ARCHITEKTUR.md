@@ -54,19 +54,31 @@ unverändert:
 - `ModelDropdown`/`modelAvailability` (Badges, HITL-Pull, 📚-Link)
 - `db.svelte.js` (SurrealDB-Singleton mit Reconnect)
 
-**Code-Sharing — ENTSCHIEDEN: Companion-Shell (Variante c, radikal einfach):**
-KAiOSSChat ist eine dünne Tauri-Shell, die die Route
-`http://localhost:5174/desktop-bubble` des LAUFENDEN KAiOSS-Stacks lädt.
-- EIN Frontend-Code (in KAiOSS), null Duplikation, null Refactoring.
-- WICHTIGE KORREKTUR zu Geminis SSG-Vorschlag: SvelteKit auf Static Site
-  umzustellen würde die Server-Routen brechen (`/api/open` = ⚓-Anker-Sprung,
-  `/api/runner` = Runner-Bootstrap). Die Companion-Shell braucht kein SSG —
-  der SvelteKit-Server läuft ja (start.sh).
-- Trade-off (bewusst): Desktop-App setzt laufenden Stack voraus — bei
-  diesem Setup ohnehin der Fall; die Shell kann den Stack-Start künftig
-  selbst anstoßen (run.sh prüft + startet).
-- Später, falls Standalone nötig: dann Workspace-Extraktion `ui-core`
-  (Geminis Struktur) — aber erst bei echtem Bedarf (Inv 8).
+**Code-Sharing — ZWEISTUFIG (Anforderung „Standalone" bestätigt 11.07.):**
+
+Ziel ist eine EIGENSTÄNDIGE Desktop-App, die auch bei geschlossenem
+KAiOSS-Dashboard läuft (Dienste SurrealDB/Ollama/kai-voice laufen im
+Hintergrund; nur das Svelte-Frontend braucht einen Host).
+
+- **Phase 0 (gebaut) = Companion-Shell-SPIKE, nicht Endprodukt:** Tauri lädt
+  `http://localhost:5174/desktop-bubble` des laufenden Stacks. Zweck: die
+  riskanteste These OHNE Build-Zyklen beweisen — läuft der komplette Chat
+  (Voice, Memory, Modell-Dropdown) unverändert in der Webview? Wenn ja,
+  trägt das Fundament.
+- **Phase 1 = Standalone-Umbau (das echte Produkt):**
+  1. Geteilte Komponenten in ein **Workspace-Package** `ui-core`
+     (npm workspace, NICHT Symlink — fragil): KAiPanel, ollamaService,
+     memoryRepository, voiceClient, ModelDropdown, modelAvailability, db.
+  2. **Eigener Desktop-Build mit `adapter-static`** (nur die Desktop-App!
+     KAiOSS-Web BLEIBT auf adapter-node — es braucht seine Server-Routen
+     `/api/open`, `/api/runner`; die dürfen nicht kaputt-SSG't werden).
+  3. **`platformAdapter`** kapselt den Unterschied: Web-Modus → `fetch('/api/…')`,
+     Desktop-Modus → Tauri-IPC an Rust. Löst `/api/open` UND die Tool-Calls
+     (Lösung C) in EINER Abstraktion — KAiPanel bleibt sonst identisch.
+  4. Desktop verbindet direkt: Ollama `:11434`, SurrealDB `ws://:8000`,
+     kai-voice `:8770` — kein KAiOSS-Webserver nötig.
+- Trade-off: Phase 1 kostet echten Aufwand (Package-Extraktion + zwei
+  Build-Configs + Adapter). Deshalb Phase 0 zuerst als billiger Beweis.
 
 ### 2.3 Agent-Schicht — Tool-Calling (Phase 3) — ENTSCHIEDEN: Lösung C
 
@@ -246,13 +258,11 @@ KAiOSSChat/
   (SurrealDB, Ollama) spricht. Beweist die Kern-These „Chat läuft in der
   Webview unverändert" in einem Tag. (Der Tool-Calling-Spike mit qwen3:8b
   wandert in Phase 3.)
-- **Phase 1 — Shell komplett:** rundes Always-on-top-Bubble ↔ Chat-Expand,
-  Tray, Autostart. Chat inkl. Memory (Capture + Retrieval = Gehirn ab Tag 1,
-  weil im übernommenen Stack enthalten) und Voice (kai-voice-Client ist
-  Teil des Stacks — Parallel-Client-Frage vorziehen!).
-  Dazu: `kaichat`-DB-User (Least Privilege) + kai_status:chat.
-- **Phase 2 — Code-Sharing sauber:** Entscheidung aus Frage 8 umsetzen
-  (Package/Submodule/Monorepo), bevor Drift entsteht.
+- **Phase 1 — STANDALONE (eigenständige App):** ui-core-Package extrahieren,
+  Desktop-Build mit adapter-static, platformAdapter (fetch↔IPC). App läuft
+  bei geschlossenem KAiOSS-Dashboard. Dazu rundes Always-on-top-Bubble ↔
+  Chat-Expand, Tray, Autostart; `kaichat`-DB-User (Least Privilege) +
+  kai_status:chat. Chat inkl. Memory + Voice ist ab hier fest eigenständig.
 - **Phase 3 — Agent-Schicht + Calendar:** Tool-Calling-Spike (qwen3:8b vs.
   qwen2.5-coder), PermissionGate, die drei Calendar-Tools, OAuth-Setup,
   kai_permission, Audit-Log.
