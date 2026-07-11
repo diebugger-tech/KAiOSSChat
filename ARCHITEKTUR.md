@@ -251,6 +251,22 @@ KAiOSSChat/
 6. SurrealDB (vorhanden, KAiOSS-Instanz) — Migration kaichat-User
 7. Google-Cloud-Projekt + OAuth-Client (einmalig, Phase 3)
 
+## 9b. Entwicklung vs. Auslieferung (bewusst getrennt)
+
+- **Entwickeln (du + Mitentwickler): Nix.** `flake.nix`-devShell → `nix develop`
+  liefert Rust, cargo-tauri, webkit reproduzierbar; kein apt/rustup, Host bleibt
+  schlank, deklarativ (deine Linie). Scheitert NICHT an der schreibgeschützten
+  `.zshenv` wie der imperative rustup-Weg. `setup-imperativ.sh` = Fallback für
+  Nicht-Nix-Systeme.
+- **Ausliefern (Endnutzer): Tauri-Bundle, KEIN Nix nötig.** `cargo tauri build`
+  → eine `.AppImage` (Doppelklick, jedes Linux) oder `.deb` (Ubuntu). Der Nutzer
+  braucht weder Nix noch Rust noch Compiler — nur die eine Datei.
+- **Ehrliche Deployment-Einschränkung:** Die App redet mit localhost-Diensten.
+  „Läuft" beim Endnutzer = App-AppImage **+** Ollama (separat installiert) **+**
+  SurrealDB (KAiOSS-Container `compose.yaml`, ohne Nix) **+** optional kai-voice.
+  Das ist die eigentliche Deployment-Story, getrennt von der App-Datei — in
+  einer künftigen `docs/INSTALL.md` dokumentieren.
+
 ## 10. Phasen (umgestellt: Chat-Übernahme zuerst — er existiert ja schon)
 
 - **Phase 0 — Spike:** Tauri-2-Minimalfenster, das den bestehenden
