@@ -267,6 +267,26 @@ KAiOSSChat/
   Das ist die eigentliche Deployment-Story, getrennt von der App-Datei — in
   einer künftigen `docs/INSTALL.md` dokumentieren.
 
+## 9c. Cross-Platform (macOS + Windows als Ziel)
+
+Tauri baut nativ für alle drei (Linux `.AppImage`/`.deb`, macOS `.app`/`.dmg`,
+Windows `.msi`/`.exe`) — Webview je Plattform nativ (WebKitGTK / WKWebView /
+WebView2). Die Svelte-UI + Chat laufen überall unverändert. Die plattform-
+spezifische Arbeit konzentriert sich AUSSCHLIESSLICH auf den Rust-Tool-Executor
+(Phase 3):
+- **Panic Button (Regel 7) ist POSIX-only:** `setsid`/`kill -PGID` gibt es
+  nicht auf Windows (dort Job Objects / `taskkill /T`). Von Anfang an hinter
+  `#[cfg(target_os = "…")]` kapseln, damit der Port sauber ist.
+- **`commands.json`-Aliase sind OS-spezifisch** (`df -h`, `ls` = Unix). Entweder
+  plattform-bewusste Whitelist oder POSIX-Welt zuerst.
+- **`Command::new` (Regel 9) ist plattformneutral** — bleibt stabil.
+- **Nix-devShell:** Linux + macOS (Nix läuft dort); Windows-Dev über den
+  imperativen Weg / rustup. Endnutzer braucht auf keiner Plattform Nix (Bundle).
+- **Reihenfolge:** Linux-first (dein Rechner) → macOS billig (auch POSIX,
+  Executor fast identisch) → Windows zuletzt (meiste #[cfg]-Arbeit).
+  Globaler Hotkey: Wayland-Caveat (Linux), macOS braucht Accessibility-Consent,
+  Windows unproblematisch.
+
 ## 10. Phasen (umgestellt: Chat-Übernahme zuerst — er existiert ja schon)
 
 - **Phase 0 — Spike:** Tauri-2-Minimalfenster, das den bestehenden
