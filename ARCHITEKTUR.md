@@ -277,8 +277,32 @@ spezifische Arbeit konzentriert sich AUSSCHLIESSLICH auf den Rust-Tool-Executor
 - **Panic Button (Regel 7) ist POSIX-only:** `setsid`/`kill -PGID` gibt es
   nicht auf Windows (dort Job Objects / `taskkill /T`). Von Anfang an hinter
   `#[cfg(target_os = "…")]` kapseln, damit der Port sauber ist.
-- **`commands.json`-Aliase sind OS-spezifisch** (`df -h`, `ls` = Unix). Entweder
-  plattform-bewusste Whitelist oder POSIX-Welt zuerst.
+- **`commands.json` wird OS-aware — aber als argv-Array, NICHT als Shell-String
+  (sonst Bruch von Regel 9!):**
+  ```json
+  "cleanup_cache": {
+    "risiko": "medium",
+    "cmd": {
+      "linux":   ["rm","-rf","<CACHE>/kai"],
+      "macos":   ["rm","-rf","<CACHE>/kai"],
+      "windows": ["cmd","/c","rmdir","/s","/q","<CACHE>\\kai"]
+    }
+  }
+  ```
+  Rust wählt per `std::env::consts::OS` den Zweig und ruft
+  `Command::new(argv[0]).args(argv[1..])` — KEINE Subshell, keine
+  Metazeichen-Auswertung. Platzhalter wie `<CACHE>` löst Rust via `dirs`
+  auf (nicht das LLM). Braucht ein Alias echte Shell-Features (Globs `*`,
+  `~`, Pipes), wird das in Rust nativ nachgebaut (`std::fs`, Verzeichnis
+  durchlaufen) — NIE über eine Shell.
+- **Semantische Pfade statt absoluter:** LLM liefert nur relativ/semantisch
+  (`Documents/Projekt/x`), Rust löst per `dirs`-Crate plattformkorrekt auf →
+  keine `/`-vs-`\`-Fehler, Pfad-Whitelist (Regel 3) semantisch statt fragil.
+- **`app.open` über `tauri-plugin-shell`** (nicht händisch xdg-open/open/
+  Start-Process) — aber dessen `open`-Scope in den Capabilities eng schneiden
+  (Regel 1), sonst öffnet es am Gate vorbei.
+- **Windows-Build:** GitHub-Actions-Windows-Runner mit cargo/node (kein Nix —
+  läuft dort nicht nativ). Endnutzer bekommt eh das Bundle.
 - **`Command::new` (Regel 9) ist plattformneutral** — bleibt stabil.
 - **Nix-devShell:** Linux + macOS (Nix läuft dort); Windows-Dev über den
   imperativen Weg / rustup. Endnutzer braucht auf keiner Plattform Nix (Bundle).
