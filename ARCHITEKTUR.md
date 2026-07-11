@@ -30,6 +30,16 @@
 - UI-Stil: KAiOSS-Terminal-Ästhetik (Screenshots als Referenz), aber
   Buttons/Header kompakter (Feedback: ESC_CLOSE u.a. zu groß — von Anfang
   an Icon-Buttons statt Text-Boxen).
+- **Übernahme ≠ Kopie — UI-Schulden bei der Portierung tilgen:**
+  - Buttons durchgängig als kompakte Icon-Buttons mit Tooltips,
+    konsistente Höhen (28px-Raster), keine Text-Boxen
+  - **Ollama-Anbindung aufräumen:** EINE Statusquelle statt drei —
+    der modelAvailability-Store liefert online/installiert/pull überall
+    (kein separater OLLAMA_ONLINE-Text + GREEN-Badge + Dropdown-Mix);
+    Header-Chip: ● Modellname · Status, mehr nicht
+  - Fehler sichtbar machen: Toasts statt console.warn (Ollama down,
+    Modell fehlt), Reconnect-Feedback statt stillem Hängen
+  - Header entrümpeln: Kontext-Zeile und Statusanzeigen zusammenführen
 
 ### 2.2 Chat-Core — ÜBERNAHME aus KAiOSS (der Kern des Ganzen)
 **Der Chat wird nicht neu gebaut — er existiert fertig in KAiOSS** und wird
