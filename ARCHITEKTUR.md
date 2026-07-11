@@ -331,7 +331,34 @@ native App und operiert nativ am PC — ein Container würde genau das verhinder
    qwen2.5-coder wählen") statt still zu scheitern. Genau das macht das
    Modell-Labor (KAiOSS #45) messbar: Tool-Zuverlässigkeit als Dimension.
 
+9. **NIEMALS `sh -c` — immer `Command::new`.** Rust führt Tool-Befehle NIE
+   über eine Subshell aus (`sh -c "…"`), sondern via
+   `std::process::Command::new(prog).arg(a).arg(b)`. Dann werden Shell-
+   Metazeichen (`;`, `$()`, `&&`, Backticks) als harmloser String übergeben,
+   nicht ausgewertet — Command-Injection ist auf OS-Ebene neutralisiert,
+   selbst wenn ein gekapertes Modell `; rm -rf` als Argument liefert.
+   (Dieselbe Lektion wie KAiOSS `/api/open`: `execFile` statt `exec`.)
+   Gilt ZUSÄTZLICH zur Argument-Leitplanke (Regel 3) — Defense in Depth.
+
+**Streaming-Pfad (bestätigt):** Im Desktop-Modus spricht Svelte für den
+Chat/Stream WEITERHIN direkt mit Ollama (`fetch`/WS zu :11434) — NUR
+Tool-Calls gehen per IPC an Rust. Streaming über den IPC-Kanal zu pipen
+würde ihn verstopfen und die UI verruckeln. (Ergibt sich aus Lösung C,
+hier explizit fixiert, damit's beim Bauen niemand „vereinfacht".)
+
+**Gehirn-Reconnect (Autostart-Rennen):** Startet die App vor dem
+SurrealDB-Dienst, darf `db.svelte.js` nicht crashen — der bestehende
+Exponential-Backoff (MAX_RETRIES, DB_STATES.RECONNECTING; Muster wie
+cmd-runner) greift, Bubble/Tray zeigt „Gehirn fehlt" (grau/blinkend) und
+wird aktiv, sobald SurrealDB da ist.
+
 **Globaler Hotkey (UX, Phase 1/5):** OS-Shortcut (z.B. Alt+Space) holt das
 Bubble in den Vordergrund + Fokus ins Textfeld (Raycast-Feeling). CAVEAT
 Ubuntu: unter **Wayland** sind globale Shortcuts eingeschränkt (Portal nötig),
 unter X11 problemlos — Session-Typ vorher prüfen.
+
+**Wake-Word-Falle (Phase 5, falls Hands-free):** Ein Wake-Word („Hey Kai")
+darf NIE über den kai-voice-WebSocket erkannt werden — das hieße 24/7-Stream
+des Raums und zerstört das Mikrofon-Release-Privacy-Feature. Erkennung lokal
+im Frontend (winziges In-Browser-Modell, z.B. Picovoice Porcupine); erst
+NACH erkanntem Wake-Word öffnet das bestehende PTT-Muster den kai-voice-Kanal.
