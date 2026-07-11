@@ -1,3 +1,15 @@
 src-tauri/target/
 node_modules/
 *.log
+
+# Nichts Privates verlaesst den Rechner — Secrets/Keys nie ins Repo
+.env
+.env.*
+!.env.example
+*_keys.json
+*.pem
+*.key
+
+# DB-Dumps/Backups (falls je lokal erzeugt)
+*.surql
+*.surql.bak
