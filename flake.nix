@@ -42,7 +42,10 @@
             export PKG_CONFIG_PATH="${pkgs.lib.makeSearchPathOutput "dev" "lib/pkgconfig" tauriDeps}"
             export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath tauriDeps}:$LD_LIBRARY_PATH"
             export GIO_EXTRA_MODULES="${pkgs.glib-networking}/lib/gio/modules"
-            # Bekannter Nix+Webkit-Renderfix (schwarzes Fenster vermeiden):
+            # Webkit-Renderfixes (Nix/Wayland/AMD):
+            # DMABUF-Renderer AUS behebt "Could not create default EGL display:
+            # EGL_BAD_PARAMETER" — der HW-Pfad scheitert unter Nix-webkit.
+            export WEBKIT_DISABLE_DMABUF_RENDERER=1
             export WEBKIT_DISABLE_COMPOSITING_MODE=1
             echo "🦀 KAiOSSChat Dev-Shell — reproduzierbar, kein apt/rustup."
             echo "   Rust: $(rustc --version 2>/dev/null || echo 'n/a')"
