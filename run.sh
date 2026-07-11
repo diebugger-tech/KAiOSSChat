@@ -26,11 +26,12 @@ fi
 #                               für eine Chat-UI völlig unkritisch)
 if command -v nix >/dev/null 2>&1; then
   exec nix develop --command bash -c '
+    # Kanonischer Fix fuer "EGL_BAD_PARAMETER" bei WebKitGTK auf Wayland:
+    # NUR den DMABUF-Renderer abschalten, nativer Wayland-Pfad. KEIN
+    # GDK_BACKEND=x11 (zwingt auf kaputteren X11-EGL-Pfad), KEIN
+    # LIBGL_ALWAYS_SOFTWARE (kann eigene EGL-Probleme machen).
     export WEBKIT_DISABLE_DMABUF_RENDERER=1
-    export WEBKIT_DISABLE_COMPOSITING_MODE=1
-    export LIBGL_ALWAYS_SOFTWARE=1
-    export GDK_BACKEND=x11
-    export RUST_BACKTRACE=1        # echte Stacktraces bei Rust-Fehlern
+    export RUST_BACKTRACE=1
     cd src-tauri && cargo tauri dev'
 else
   echo "⚠️  'nix' nicht gefunden. Entweder Nix installieren, oder den"
