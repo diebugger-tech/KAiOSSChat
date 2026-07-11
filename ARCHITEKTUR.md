@@ -330,6 +330,28 @@ spezifische Arbeit konzentriert sich AUSSCHLIESSLICH auf den Rust-Tool-Executor
 - **Phase 5 — Politur:** Sprachsteuerungs-Feinheiten, Energie-/Statusanzeigen
   (Muster aus KAiOSS #59).
 
+### Endgame-Ideen (Phase 4/5, Gemini-Review — priorisiert)
+
+- **[substanziell] Parameter-Inferenz L0→L1:** Recorder difft mehrere ähnliche
+  Tool-Call-Traces → erkennt Variable vs. Konstante → hebt Felder in der
+  SKILL.md zu `$DATUM`/`$TITEL` an. LEITPLANKE: NICHT aus nur 2 Beispielen
+  auto-parametrisieren (Zufalls-Gleichheit/-Differenz); die Parametrisierung
+  ist ein HITL-VORSCHLAG, den der Mensch bestätigt — wie die Memory-
+  Konsolidierung (System schlägt vor, Mensch promotet). Der intellektuelle
+  Kern des Lern-Systems.
+- **[wichtig] Schema-Version-Lock:** `schema_version`-Tabelle in SurrealDB;
+  KAiOSSChat prüft beim Start gegen die eigene Codebase. Web + Desktop teilen
+  eine DB → Drift ist unvermeidlich. LEITPLANKE: nicht hart aussperren —
+  bei Mismatch read-only-Fallback + Update-Hinweis, plus Migrations-Story.
+  Schützt vor Datenkorruption; früh einbauen (shared DB existiert ab Phase 1).
+- **[woanders] Gamer-/Ressourcen-Modus:** = KAiOSS #59 (VRAM-Monitor). Der
+  interaktive Chat läuft nur auf Auslösung — Rücksicht braucht v.a. der
+  Hintergrund-Wochenlauf (dort schon notiert). GPU-Last cross-platform
+  auslesen ist OS-spezifisch (nvidia-smi/rocm-smi/Metal).
+- **[kosmetik] Edge-Snapping + Opacity:** Bubble snappt bei Inaktivität an
+  den Rand + halbtransparent, springt bei Hover/Hotkey zurück. Reine
+  Phase-5-Politur, kein Architektur-Thema.
+
 ## 11. Offene Fragen für den Gegencheck (Gemini)
 
 1. **Pi/TS vs. Python-Eigenbau** — Trade-off-Einschätzung? (Pi spart Loop/
