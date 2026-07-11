@@ -28,6 +28,7 @@ if command -v nix >/dev/null 2>&1; then
   exec nix develop --command bash -c '
     export WEBKIT_DISABLE_DMABUF_RENDERER=1
     export WEBKIT_DISABLE_COMPOSITING_MODE=1
+    export LIBGL_ALWAYS_SOFTWARE=1
     export GDK_BACKEND=x11
     export RUST_BACKTRACE=1        # echte Stacktraces bei Rust-Fehlern
     cd src-tauri && cargo tauri dev'
