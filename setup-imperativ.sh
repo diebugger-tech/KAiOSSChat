@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# HINWEIS: Fallback-Weg (apt + rustup, imperativ, systemweit). Auf Nix-Home-
+# Manager-Systemen scheitert rustup an der schreibgeschuetzten .zshenv —
+# nutze stattdessen die reproduzierbare Nix-Dev-Shell: nix develop && ./run.sh
 # KAiOSSChat — Einmal-Setup (Phase 0): installiert alle Abhängigkeiten.
 # Idempotent: bereits Installiertes wird erkannt und übersprungen.
 set -euo pipefail
