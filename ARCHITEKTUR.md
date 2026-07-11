@@ -287,3 +287,51 @@ KAiOSSChat/
 7. **Sprach-Bestätigung** — trägt die Regel „Voice bestätigt nie schreibende
    Aktionen" (§4)? Oder gibt es ein sicheres Muster (Bestätigungs-Phrase +
    Confidence-Schwelle der STT), das wir unterschätzen?
+
+## 12. Phase-3/4-Leitplanken (Tool-Ausführung) — VERBINDLICH
+
+Gesammelt aus dem Gemini-Ping-Pong 11.07. Diese acht Regeln gelten beim Bau
+der Agent-/Tool-Schicht (Lösung C, §2.3). Kein Docker: KAiOSSChat ist eine
+native App und operiert nativ am PC — ein Container würde genau das verhindern.
+
+1. **Rust ist der letzte Gatekeeper (Defense in Depth).** Frontend-/Adapter-
+   Validierung ist UX-Komfort; die eiserne Mauer liegt in Rust. Bei jedem
+   IPC-Tool-Call parst und validiert Rust `commands.json` SELBST und lehnt
+   alles ab, was nicht drinsteht. Nie dem Frontend vertrauen (XSS-Vektor über
+   gerenderten Modell-Output). Muster: KAiOSS hard-gated DB-Permissions.
+2. **Read/Write aus `risiko` ableiten, nicht neu erfinden.** `commands.json`
+   klassifiziert jeden Alias (low/medium/high/critical). `low` = darf „Immer
+   erlauben" verdienen; `medium`+ = Klickpflicht. Eine Wahrheitsquelle,
+   konsistent mit dem cmd-runner.
+3. **Argument-Leitplanke (Read UND Write).** „Immer erlauben" NUR bei exakt
+   statischem Argument (Alias ohne freie Args / Pfad aus Whitelist wie
+   `~/Projekte`). Freie Argumente erfordern IMMER einen Klick — auch bei
+   `fs.read`: ein gekaperter Read leakt `.env`/`~/.ssh` (Exfiltration ist
+   der Blast-Radius von Read, Schaden der von Write; beide brauchen die Regel).
+   delete-Verben nie automatisch.
+4. **Dynamische Tool-Discovery.** Rust liest `commands.json` beim Start und
+   liefert die Alias-Liste ans Frontend, das daraus das Ollama-Tool-Schema
+   generiert. Neuer Alias in KAiOSS → Desktop kennt ihn nach Neustart, mit
+   `risiko`-Stufe, ohne Code-Änderung. `commands.json` = EIN Vertrag für
+   Schema-Generierung UND Validierung (Regel 1).
+5. **Strenge Tool-Descriptions.** Lokale Modelle brauchen explizite Schemas:
+   „Argument 'alias' MUSS exakt einem aus [<Liste>] sein. Erfinde nie eigene."
+   Liste aus `commands.json` injiziert (nie hart eintippen — Drift).
+6. **Rust-Truncation (Context-Schutz).** Tool-Ausgaben kappt der Rust-Executor
+   VOR Rückgabe (z.B. 50 erste + 50 letzte Zeilen, `[…truncated…]`) — im Tool,
+   nicht im Prompt, damit unumgehbar. Schützt 7B/8B-Kontextfenster.
+7. **Panic Button / Prozessgruppen.** Tool-Prozesse via `setsid` in eigener
+   Prozessgruppe starten (PID/PGID in Rust-State). STOP-Button killt
+   Ollama-Stream UND die Gruppe: erst SIGTERM, nach Timeout SIGKILL
+   (`kill -- -PGID`) — sonst überleben Enkelprozesse als Zombies.
+8. **Tool-Capability ≠ installiert.** Ein Modell im Dropdown kann chatten,
+   aber nicht zwingend Tool-Calling (fehlt das Tool-Template im Modelfile →
+   keine `tool_calls` bzw. als Text halluziniert). Desktop erkennt das und
+   sagt es ehrlich („Modell X führt keine Aktionen aus — für PC-Steuerung
+   qwen2.5-coder wählen") statt still zu scheitern. Genau das macht das
+   Modell-Labor (KAiOSS #45) messbar: Tool-Zuverlässigkeit als Dimension.
+
+**Globaler Hotkey (UX, Phase 1/5):** OS-Shortcut (z.B. Alt+Space) holt das
+Bubble in den Vordergrund + Fokus ins Textfeld (Raycast-Feeling). CAVEAT
+Ubuntu: unter **Wayland** sind globale Shortcuts eingeschränkt (Portal nötig),
+unter X11 problemlos — Session-Typ vorher prüfen.
