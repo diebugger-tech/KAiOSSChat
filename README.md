@@ -5,6 +5,10 @@ KAiOSS-Chat (Memory, Voice, Modell-Dropdown) — Tauri-2-Shell (Rust) um die
 Svelte-5-Frontend-Route `/desktop-bubble` des laufenden KAiOSS-Stacks.
 100 % lokal. Details: [ARCHITEKTUR.md](ARCHITEKTUR.md).
 
+| App-Fenster (standalone, Modell-Dropdown) | Desktop-Icon |
+|:---:|:---:|
+| ![KAi App-Fenster](docs/screenshots/app-fenster.png) | ![KAi Desktop-Icon](docs/screenshots/desktop-icon.png) |
+
 **Status: Phase 0 (Companion-Shell) läuft.** Die App lädt
 `http://localhost:5174/desktop-bubble` und braucht daher den KAiOSS-Stack
 (wird von den Start-Skripten automatisch mitgestartet). Phase 1 =
