@@ -26,10 +26,10 @@ fi
 #                               für eine Chat-UI völlig unkritisch)
 if command -v nix >/dev/null 2>&1; then
   exec nix develop --command bash -c '
-    # Kanonischer Fix fuer "EGL_BAD_PARAMETER" bei WebKitGTK auf Wayland:
-    # NUR den DMABUF-Renderer abschalten, nativer Wayland-Pfad. KEIN
-    # GDK_BACKEND=x11 (zwingt auf kaputteren X11-EGL-Pfad), KEIN
-    # LIBGL_ALWAYS_SOFTWARE (kann eigene EGL-Probleme machen).
+    # WICHTIG (Plan C, System-webkit): KEINE Nix-Bibliothekspfade zur Laufzeit
+    # — sonst laedt das System-webkit eine Nix-libsqlite/-libwebkit und crasht
+    # (das war die wahre Ursache hinter "EGL_BAD_PARAMETER"). Sauber machen:
+    unset LD_LIBRARY_PATH
     export WEBKIT_DISABLE_DMABUF_RENDERER=1
     export RUST_BACKTRACE=1
     cd src-tauri && cargo tauri dev'
