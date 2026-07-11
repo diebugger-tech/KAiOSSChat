@@ -17,9 +17,19 @@ if ! curl -s -o /dev/null http://127.0.0.1:5174/desktop-bubble; then
   done
 fi
 
-# 2. Tauri in der Nix-Dev-Shell starten (alle Deps aus flake.nix)
+# 2. Tauri in der Nix-Dev-Shell starten (alle Deps aus flake.nix).
+#    Webkit-Renderfixes HIER gesetzt (nicht nur im shellHook), damit sie
+#    unabhängig vom Shell-Zustand greifen:
+#    - DMABUF-Renderer aus  -> behebt "EGL_BAD_PARAMETER"
+#    - Compositing aus       -> gegen schwarzes/leeres Fenster
+#    - Software-GL erzwingen -> harte Fallback-Garantie (etwas langsamer,
+#                               für eine Chat-UI völlig unkritisch)
 if command -v nix >/dev/null 2>&1; then
-  exec nix develop --command bash -c 'cd src-tauri && cargo tauri dev'
+  exec nix develop --command bash -c '
+    export WEBKIT_DISABLE_DMABUF_RENDERER=1
+    export WEBKIT_DISABLE_COMPOSITING_MODE=1
+    export LIBGL_ALWAYS_SOFTWARE=1
+    cd src-tauri && cargo tauri dev'
 else
   echo "⚠️  'nix' nicht gefunden. Entweder Nix installieren, oder den"
   echo "   imperativen Fallback nutzen: ./setup-imperativ.sh (apt/rustup)."
